@@ -3,6 +3,12 @@ REGISTER_FILE = 'register/register.csv'
 CAMERA_LIST = 'conf/camera_list.txt'
 LOG_FILE = 'logs/result.log'
 
+# main setting
+SAVE_VIDEO = True
+PANEL_WIDTH = 180
+PANEL_HEIGHT = 80
+PANEL_TEXT_HEIGHT = 35
+
 # anpr setting
 ANPR_ROI = [0.2, 0.2, 0.8, 1.0]
 SKEW_FACTOR = -0.4     # -0.4

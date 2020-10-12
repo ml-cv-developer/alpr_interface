@@ -1,6 +1,7 @@
 from openalpr import Alpr
 from setting import *
 import numpy as np
+import time
 import os
 import sys
 import cv2
@@ -59,7 +60,8 @@ class PlateDetect:
                 result = {'plate': results_list[i]['plate'],
                           'confidence': results_list[i]['confidence'],
                           'coordinates': coordinate,
-                          'candidates': results_list[i]['candidates']}
+                          'candidates': results_list[i]['candidates'],
+                          'time': time.time()}
 
                 ret_list.append(result)
 
