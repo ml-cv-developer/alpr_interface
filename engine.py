@@ -130,8 +130,8 @@ class PlateRecognition:
         while True:
             for cam_ind in range(len(camera_list)):
                 if self.result_img[cam_ind] is not None:
-                    # cv2.imshow(camera_list[cam_ind], self.result_img[cam_ind])
-                    cv2.imshow(camera_list[cam_ind], self.frames[cam_ind])
+                    cv2.imshow(camera_list[cam_ind], self.result_img[cam_ind])
+                    # cv2.imshow(camera_list[cam_ind], self.frames[cam_ind])
 
             if cv2.waitKey(10) == ord('q'):
                 break

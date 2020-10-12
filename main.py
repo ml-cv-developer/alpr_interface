@@ -12,13 +12,13 @@ if __name__ == '__main__':
     #            'B58BPS']
     # in_args = ['check',
     #            'local',
-    #            '../2.avi']
-    # in_args = ['check',
-    #            'local',
     #            'camera']
     in_args = ['check',
                'local',
                '../video/2.mp4']
+    # in_args = ['check',
+    #            'local',
+    #            '../image/1.png']
 
     for arg_ind in range(1, len(sys.argv)):
         in_args[arg_ind - 1] = sys.argv[arg_ind]
