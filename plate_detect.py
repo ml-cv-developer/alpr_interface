@@ -12,8 +12,7 @@ _cur_dir = os.path.dirname(os.path.realpath(__file__))
 
 class PlateDetect:
 
-    def __init__(self, country='eu', region='md', debug=True):
-        self.debug = debug
+    def __init__(self, country='eu', region='md'):
         self.alpr = Alpr(country=country,
                          config_file=os.path.join(_cur_dir, 'conf/openalpr.ini'),
                          runtime_dir='/usr/share/openalpr/runtime_data')
@@ -48,10 +47,10 @@ class PlateDetect:
             ret_list = []
             for i in range(len(results_list)):
                 pos = results_list[i]['coordinates']
-                x1, y1 = pos[0]['x'], int(pos[0]['y'] - pos[0]['x'] * SKEW_FACTOR_LIST[cam_ind])
-                x2, y2 = pos[1]['x'], int(pos[1]['y'] - pos[1]['x'] * SKEW_FACTOR_LIST[cam_ind])
-                x3, y3 = pos[2]['x'], int(pos[2]['y'] - pos[2]['x'] * SKEW_FACTOR_LIST[cam_ind])
-                x4, y4 = pos[3]['x'], int(pos[3]['y'] - pos[3]['x'] * SKEW_FACTOR_LIST[cam_ind])
+                x1, y1 = pos[0]['x'], int(pos[0]['y'] - pos[0]['x'] * CAM_INFO[cam_ind][SKEW_FACTOR])
+                x2, y2 = pos[1]['x'], int(pos[1]['y'] - pos[1]['x'] * CAM_INFO[cam_ind][SKEW_FACTOR])
+                x3, y3 = pos[2]['x'], int(pos[2]['y'] - pos[2]['x'] * CAM_INFO[cam_ind][SKEW_FACTOR])
+                x4, y4 = pos[3]['x'], int(pos[3]['y'] - pos[3]['x'] * CAM_INFO[cam_ind][SKEW_FACTOR])
                 coordinate = [min(x1, x2, x3, x4) + roi_x1,
                               min(y1, y2, y3, y4) + roi_y1,
                               max(x1, x2, x3, x4) + roi_x1,
@@ -137,13 +136,13 @@ class PlateDetect:
 
         # ------------------ image crop using ROI -----------------------
         img_h, img_w = img.shape[:2]
-        roi_x1, roi_y1 = int(img_w * ANPR_ROI_LIST[cam_ind][0]), int(img_h * ANPR_ROI_LIST[cam_ind][1])
-        roi_x2, roi_y2 = int(img_w * ANPR_ROI_LIST[cam_ind][2]), int(img_h * ANPR_ROI_LIST[cam_ind][3])
+        roi_x1, roi_y1 = int(img_w * CAM_INFO[cam_ind][ROI][0]), int(img_h * CAM_INFO[cam_ind][ROI][1])
+        roi_x2, roi_y2 = int(img_w * CAM_INFO[cam_ind][ROI][2]), int(img_h * CAM_INFO[cam_ind][ROI][3])
         img_crop = img[roi_y1:roi_y2, roi_x1:roi_x2]
 
         # ----------------------- image skew ----------------------------
         pts1 = np.float32([[0, 0], [0, 100], [100, 100]])
-        pts2 = np.float32([[0, 0], [0, 100], [100, 100 + SKEW_FACTOR_LIST[cam_ind] * 100]])
+        pts2 = np.float32([[0, 0], [0, 100], [100, 100 + CAM_INFO[cam_ind][SKEW_FACTOR] * 100]])
         matrix = cv2.getAffineTransform(pts1, pts2)
         img_crop = cv2.warpAffine(img_crop, matrix, (roi_x2 - roi_x1, roi_y2 - roi_y1))
 
@@ -154,8 +153,8 @@ class PlateDetect:
         bytes_data = bytes((bytearray(enc)))
         results_list = []
 
-        for i in range(len(ANPR_CALIB_LIST[cam_ind])):
-            self.alpr.set_prewarp(ANPR_CALIB_LIST[cam_ind][i])
+        for i in range(len(CAM_INFO[cam_ind][ANPR_CALIB_LIST])):
+            self.alpr.set_prewarp(CAM_INFO[cam_ind][ANPR_CALIB_LIST][i])
             results = self.alpr.recognize_array(bytes_data)
             if results['results']:
                 ret = self.__extract_result__(results['results'], cam_ind, roi_x1, roi_y1)

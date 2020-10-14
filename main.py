@@ -1,4 +1,3 @@
-from setting import CAMERA_LIST
 import engine
 import logging
 import cv2
@@ -40,7 +39,6 @@ if __name__ == '__main__':
 
         elif label.lower()[-4:] in ['.mp4', '.avi']:
             class_plate.process_video_file(label)
-            # class_plate.process_cameras([label])
 
         elif label == 'camera':
-            class_plate.process_cameras(CAMERA_LIST)
+            class_plate.process_cameras()
