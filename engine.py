@@ -54,15 +54,28 @@ class PlateRecognition:
             cv2.putText(img, draw_text, (pos[0], pos[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
         return img
 
-    def draw_plate_ui(self, img):
+    def draw_plate_ui(self, img, plate_dict, cam_ind):
         if img is None:
             return None
 
         img_h, img_w = img.shape[:2]
-        img_new = np.zeros((img_h + 10, img_w + PANEL_WIDTH + 20, 3), dtype=np.uint8)
-        img_new[:] = (196, 114, 68)
+
+        # ----- draw ROI -----
+        if DRAW_ROI:
+            x1, y1 = int(img_w * ANPR_ROI_LIST[cam_ind][0]), int(img_h * ANPR_ROI_LIST[cam_ind][1])
+            x2, y2 = int(img_w * ANPR_ROI_LIST[cam_ind][2]), int(img_h * ANPR_ROI_LIST[cam_ind][3])
+            cv2.rectangle(img, (x1, y1), (x2, y2), (50, 50, 50))
+
+        # ----- draw plate -----
+        if DRAW_PLATE and plate_dict is not None:
+            pos = plate_dict['coordinates']
+            cv2.rectangle(img, (pos[0], pos[1]), (pos[2], pos[3]), (0, 0, 255), 2)
+            draw_text = plate_dict['plate'].upper()
+            cv2.putText(img, draw_text, (pos[0], pos[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
         # ----- draw main frame and background -----
+        img_new = np.zeros((img_h + 10, img_w + PANEL_WIDTH + 20, 3), dtype=np.uint8)
+        img_new[:] = (196, 114, 68)
         img_new[5:img_h+5, 5:img_w+5] = img
         cv2.rectangle(img_new, (5, 5), (img_w + 5, img_h + 5), (255, 155, 155))
 
@@ -80,11 +93,11 @@ class PlateRecognition:
             cv2.rectangle(img_new, (px1, y1), (px2, y2), (255, 155, 155))
 
         # ----- draw detected plate result -----
-        for i in range(min(list_size, len(self.buffer_plate_info))):
+        for i in range(min(list_size, len(self.buffer_plate_info[cam_ind]))):
             y1 = PANEL_HEIGHT + 5 + i * distance
             y2 = PANEL_TEXT_HEIGHT + PANEL_HEIGHT - 5 + i * distance
-            str_plate = self.buffer_plate_info[i]['plate']
-            img_new[5 + i * distance:y1, px1:px2] = self.buffer_plate_img[i]
+            str_plate = self.buffer_plate_info[cam_ind][i]['plate']
+            img_new[5 + i * distance:y1, px1:px2] = self.buffer_plate_img[cam_ind][i]
             cv2.putText(img_new, str_plate, (px1 + 30, y2), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
         return img_new
@@ -110,18 +123,33 @@ class PlateRecognition:
         return self.class_engine.detect_file(img_file)
 
     def process_image(self, img):
-        return self.class_engine.detect_image(img)
+        return self.class_engine.detect_image(img, 0)
 
     def process_video_file(self, vid_file):
+        self.buffer_plate_info.append([])
+        self.buffer_plate_img.append([])
         cap = cv2.VideoCapture(vid_file)
+        saver = None
+
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
 
-            plate = self.class_engine.detect_image(frame)
+            frame = cv2.resize(frame, None, fx=RESIZE_FACTOR_LIST[0], fy=RESIZE_FACTOR_LIST[0])
+            plate = self.class_engine.detect_image(frame.copy(), 0)
             user_name = self.check_user(plate)
-            img_draw = self.draw_plate(frame, plate, user_name)
+            self.update_plate_buffer(frame.copy(), plate, 0)
+            # img_draw = self.draw_plate(frame, plate, user_name)
+            img_draw = self.draw_plate_ui(frame.copy(), plate, 0)
+
+            if SAVE_VIDEO:
+                if saver is None:
+                    h, w = img_draw.shape[:2]
+                    fourcc = cv2.VideoWriter_fourcc(*'MPEG')
+                    saver = cv2.VideoWriter('result.avi', fourcc, 30, (w, h))
+                else:
+                    saver.write(img_draw)
 
             if plate is not None:
                 if user_name == '':
@@ -133,38 +161,44 @@ class PlateRecognition:
             if cv2.waitKey(10) == ord('q'):
                 break
 
-    def update_plate_buffer(self, frame, plate):
+        cap.release()
+        saver.release()
+        cv2.destroyAllWindows()
+
+    def update_plate_buffer(self, frame, plate, cam_ind):
         if plate is not None:
+            img_h, img_w = frame.shape[:2]
             plate_pos = plate['coordinates']
-            plate_x1 = int((plate_pos[0] + plate_pos[2] - PANEL_WIDTH) / 2)
-            plate_y1 = int((plate_pos[1] + plate_pos[3] - PANEL_HEIGHT) / 2)
+            plate_x1 = max(min(int((plate_pos[0] + plate_pos[2] - PANEL_WIDTH) / 2), img_w - PANEL_WIDTH), 0)
+            plate_y1 = max(min(int((plate_pos[1] + plate_pos[3] - PANEL_HEIGHT) / 2), img_h - PANEL_HEIGHT), 0)
             img_plate = frame[plate_y1:plate_y1 + PANEL_HEIGHT, plate_x1:plate_x1 + PANEL_WIDTH]
 
-            if len(self.buffer_plate_info) > 0:
-                prev_plate = self.buffer_plate_info[0]['plate']
+            if len(self.buffer_plate_info[cam_ind]) > 0:
+                prev_plate = self.buffer_plate_info[cam_ind][0]['plate']
             else:
                 prev_plate = ''
 
             # compare plate with the previous result
             score = fuzz.ratio(plate['plate'], prev_plate)
             if score > 85 or (plate['time'] - self.prev_time < 2 and score > 65):
-                if plate['confidence'] > self.buffer_plate_info[0]['confidence']:
-                    if len(self.buffer_plate_info) > 1 and plate['plate'] == self.buffer_plate_info[1]['plate']:
-                        self.buffer_plate_info.pop(0)
-                        self.buffer_plate_img.pop(0)
+                if plate['confidence'] > self.buffer_plate_info[cam_ind][0]['confidence']:
+                    if len(self.buffer_plate_info[cam_ind]) > 1 and \
+                            plate['plate'] == self.buffer_plate_info[cam_ind][1]['plate']:
+                        self.buffer_plate_info[cam_ind].pop(0)
+                        self.buffer_plate_img[cam_ind].pop(0)
                     else:
-                        self.buffer_plate_img[0] = img_plate
-                        self.buffer_plate_info[0] = plate
+                        self.buffer_plate_img[cam_ind][0] = img_plate
+                        self.buffer_plate_info[cam_ind][0] = plate
 
                     self.prev_time = plate['time']
             else:
-                self.buffer_plate_img.insert(0, img_plate)
-                self.buffer_plate_info.insert(0, plate)
+                self.buffer_plate_img[cam_ind].insert(0, img_plate)
+                self.buffer_plate_info[cam_ind].insert(0, plate)
                 self.prev_time = plate['time']
 
-                if len(self.buffer_plate_info) >= 20:
-                    self.buffer_plate_img.pop(-1)
-                    self.buffer_plate_info.pop(-1)
+                if len(self.buffer_plate_info[cam_ind]) >= 20:
+                    self.buffer_plate_img[cam_ind].pop(-1)
+                    self.buffer_plate_info[cam_ind].pop(-1)
 
     def _thread_read_camera(self, camera_source, camera_ind):
         cap = cv2.VideoCapture(camera_source)
@@ -173,36 +207,40 @@ class PlateRecognition:
             if not ret:
                 break
 
-            self.frames[camera_ind] = frame
+            self.frames[camera_ind] = cv2.resize(frame, None, fx=RESIZE_FACTOR_LIST[camera_ind],
+                                                 fy=RESIZE_FACTOR_LIST[camera_ind])
             time.sleep(0.04)
 
     def _thread_detect_plate(self, camera_source, camera_ind):
         while True:
             frame = self.frames[camera_ind]
-            plate = self.class_engine.detect_image(frame)
-            self.update_plate_buffer(frame, plate)
-            user_name = self.check_user(plate)
-            # self.result_img[camera_ind] = self.draw_plate(frame, plate, user_name)
-            self.result_img[camera_ind] = self.draw_plate_ui(frame)
 
-            if plate is not None:
-                if user_name == '':
-                    logging.info("Camera: {}, Plate License: {}".format(camera_source, plate['plate']))
-                else:
-                    logging.info("Camera: {}, Plate License: {}, User is {}".
-                                 format(camera_source, plate['plate'], user_name))
+            if frame is not None:
+                plate = self.class_engine.detect_image(frame.copy(), camera_ind)
+                self.update_plate_buffer(frame.copy(), plate, camera_ind)
+                user_name = self.check_user(plate)
+                # self.result_img[camera_ind] = self.draw_plate(frame, plate, user_name)
+                self.result_img[camera_ind] = self.draw_plate_ui(frame.copy(), plate, camera_ind)
+
+                if plate is not None:
+                    if user_name == '':
+                        logging.info("Camera: {}, Plate License: {}".format(camera_source, plate['plate']))
+                    else:
+                        logging.info("Camera: {}, Plate License: {}, User is {}".
+                                     format(camera_source, plate['plate'], user_name))
 
             time.sleep(0.01)
 
     def process_cameras(self, camera_list):
-
+        saver_list = []
         for i in range(len(camera_list)):
             self.frames.append(None)
             self.result_img.append(None)
+            saver_list.append(None)
+            self.buffer_plate_info.append([])
+            self.buffer_plate_img.append([])
             thread.start_new_thread(self._thread_read_camera, (camera_list[i], i))
             thread.start_new_thread(self._thread_detect_plate, (camera_list[i], i))
-
-        saver = None
 
         while True:
             for cam_ind in range(len(camera_list)):
@@ -212,15 +250,16 @@ class PlateRecognition:
                     cv2.imshow(camera_list[cam_ind], img)
 
                     if SAVE_VIDEO:
-                        if saver is None:
+                        if saver_list[cam_ind] is None:
                             h, w = img.shape[:2]
                             fourcc = cv2.VideoWriter_fourcc(*'MPEG')
-                            saver = cv2.VideoWriter('result{}.avi'.format(cam_ind), fourcc, 30, (w, h))
+                            saver_list[cam_ind] = cv2.VideoWriter('result{}.avi'.format(cam_ind), fourcc, 30, (w, h))
                         else:
-                            saver.write(img)
+                            saver_list[cam_ind].write(img)
 
             if cv2.waitKey(30) == ord('q'):
                 break
 
-        saver.release()
+        for i in range(len(camera_list)):
+            saver_list[i].release()
         cv2.destroyAllWindows()

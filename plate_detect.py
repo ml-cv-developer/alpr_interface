@@ -40,18 +40,18 @@ class PlateDetect:
 
     def detect_file(self, img_file):
         img = cv2.imread(img_file)
-        return self.detect_image(img)
+        return self.detect_image(img, 0)
 
     @staticmethod
-    def __extract_result__(results_list, roi_x1=0, roi_y1=0):
+    def __extract_result__(results_list, cam_ind, roi_x1=0, roi_y1=0):
         if results_list:
             ret_list = []
             for i in range(len(results_list)):
                 pos = results_list[i]['coordinates']
-                x1, y1 = pos[0]['x'], int(pos[0]['y'] - pos[0]['x'] * SKEW_FACTOR)
-                x2, y2 = pos[1]['x'], int(pos[1]['y'] - pos[1]['x'] * SKEW_FACTOR)
-                x3, y3 = pos[2]['x'], int(pos[2]['y'] - pos[2]['x'] * SKEW_FACTOR)
-                x4, y4 = pos[3]['x'], int(pos[3]['y'] - pos[3]['x'] * SKEW_FACTOR)
+                x1, y1 = pos[0]['x'], int(pos[0]['y'] - pos[0]['x'] * SKEW_FACTOR_LIST[cam_ind])
+                x2, y2 = pos[1]['x'], int(pos[1]['y'] - pos[1]['x'] * SKEW_FACTOR_LIST[cam_ind])
+                x3, y3 = pos[2]['x'], int(pos[2]['y'] - pos[2]['x'] * SKEW_FACTOR_LIST[cam_ind])
+                x4, y4 = pos[3]['x'], int(pos[3]['y'] - pos[3]['x'] * SKEW_FACTOR_LIST[cam_ind])
                 coordinate = [min(x1, x2, x3, x4) + roi_x1,
                               min(y1, y2, y3, y4) + roi_y1,
                               max(x1, x2, x3, x4) + roi_x1,
@@ -72,6 +72,12 @@ class PlateDetect:
 
     @staticmethod
     def filter_plate(results):
+        """
+            Allow these format
+            99 x 9999, 99 x 99999
+            99 xx 999, 99 xx 9999
+            99 xxx 99, 99 xxx 999
+        """
         c2d_list = [
             ['Z', '2'],
             ['O', '0'],
@@ -125,19 +131,19 @@ class PlateDetect:
 
         return result
 
-    def detect_image(self, img):
+    def detect_image(self, img, cam_ind):
         if img is None or img.shape[0] == 0:
             return None
 
         # ------------------ image crop using ROI -----------------------
         img_h, img_w = img.shape[:2]
-        roi_x1, roi_y1 = int(img_w * ANPR_ROI[0]), int(img_h * ANPR_ROI[1])
-        roi_x2, roi_y2 = int(img_w * ANPR_ROI[2]), int(img_h * ANPR_ROI[3])
+        roi_x1, roi_y1 = int(img_w * ANPR_ROI_LIST[cam_ind][0]), int(img_h * ANPR_ROI_LIST[cam_ind][1])
+        roi_x2, roi_y2 = int(img_w * ANPR_ROI_LIST[cam_ind][2]), int(img_h * ANPR_ROI_LIST[cam_ind][3])
         img_crop = img[roi_y1:roi_y2, roi_x1:roi_x2]
 
         # ----------------------- image skew ----------------------------
         pts1 = np.float32([[0, 0], [0, 100], [100, 100]])
-        pts2 = np.float32([[0, 0], [0, 100], [100, 100 + SKEW_FACTOR * 100]])
+        pts2 = np.float32([[0, 0], [0, 100], [100, 100 + SKEW_FACTOR_LIST[cam_ind] * 100]])
         matrix = cv2.getAffineTransform(pts1, pts2)
         img_crop = cv2.warpAffine(img_crop, matrix, (roi_x2 - roi_x1, roi_y2 - roi_y1))
 
@@ -148,11 +154,11 @@ class PlateDetect:
         bytes_data = bytes((bytearray(enc)))
         results_list = []
 
-        for i in range(len(ANPR_CALIB_LIST)):
-            self.alpr.set_prewarp(ANPR_CALIB_LIST[i])
+        for i in range(len(ANPR_CALIB_LIST[cam_ind])):
+            self.alpr.set_prewarp(ANPR_CALIB_LIST[cam_ind][i])
             results = self.alpr.recognize_array(bytes_data)
             if results['results']:
-                ret = self.__extract_result__(results['results'], roi_x1, roi_y1)
+                ret = self.__extract_result__(results['results'], cam_ind, roi_x1, roi_y1)
                 results_list += ret
                 # print(ret[0]['plate'], ret[0]['confidence'])
 

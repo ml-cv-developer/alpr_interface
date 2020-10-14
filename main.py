@@ -1,24 +1,15 @@
 from setting import CAMERA_LIST
 import engine
-import func
 import logging
 import cv2
 import sys
 
 
 if __name__ == '__main__':
-    # in_args = ['register',
-    #            'Filic',
-    #            'B58BPS']
-    # in_args = ['check',
-    #            'local',
-    #            'camera']
-    in_args = ['check',
-               'local',
-               '../video/2.mp4']
-    # in_args = ['check',
-    #            'local',
-    #            '../image/1.png']
+    # in_args = ['register', 'Filic', 'B58BPS']
+    in_args = ['check', 'local', 'camera']
+    # in_args = ['check', 'local', '../video/2.mp4']
+    # in_args = ['check', 'local', '../image/1.png']
 
     for arg_ind in range(1, len(sys.argv)):
         in_args[arg_ind - 1] = sys.argv[arg_ind]
@@ -29,8 +20,10 @@ if __name__ == '__main__':
 
     if run_mode == 'register':
         engine.register(in_args[1], in_args[2])
+
     elif run_mode == 'check':
         class_plate = engine.PlateRecognition(engine_type)
+
         if label.lower()[-4:] in ['.jpg', '.bmp', '.png', 'jpeg']:
             img_org = cv2.imread(label)
             plate_result = class_plate.process_image(img_org)
@@ -44,9 +37,10 @@ if __name__ == '__main__':
             img_org = class_plate.draw_plate(img_org, plate_result, user)
             cv2.imshow('ret', img_org)
             cv2.waitKey(0)
+
         elif label.lower()[-4:] in ['.mp4', '.avi']:
-            # class_plate.process_video_file(label)
-            class_plate.process_cameras([label])
+            class_plate.process_video_file(label)
+            # class_plate.process_cameras([label])
+
         elif label == 'camera':
-            cam_list = func.load_text(CAMERA_LIST).splitlines()
-            class_plate.process_cameras(cam_list)
+            class_plate.process_cameras(CAMERA_LIST)
