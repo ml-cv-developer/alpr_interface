@@ -2,6 +2,8 @@ from get_anpr_server import GetPlateServer
 from plate_detect import PlateDetect
 from setting import *
 from fuzzywuzzy import fuzz
+from database import ClassMySQL
+from datetime import datetime
 import numpy as np
 import func
 import logging
@@ -28,6 +30,12 @@ def register(user_name, plate_name):
 class PlateRecognition:
 
     def __init__(self, engine='local'):
+        if ENABLE_DB:
+            self.class_db = ClassMySQL()
+            self.class_db.connect(host='78.188.225.187', database='camera', user='root', password='Aa3846sasa*-')
+            self.sql_table = 'camera'
+            self.query_list = []
+
         if engine == 'service':
             self.class_engine = [GetPlateServer()]
         else:
@@ -231,9 +239,27 @@ class PlateRecognition:
 
             time.sleep(0.01)
 
+    def send_query(self):
+        while True:
+            if ENABLE_DB:
+                cur_time = time.time()
+                for cam_ind in range(len(CAM_INFO)):
+                    for i in range(len(self.buffer_plate_info[cam_ind])):
+                        plate = self.buffer_plate_info[cam_ind][i]
+                        if plate['processed']:
+                            break
+                        elif cur_time - plate['time'] > 10:
+                            dt_object = datetime.fromtimestamp(plate['time'])
+                            time_stamp = dt_object.strftime("%Y-%m-%d %H:%M:%S")
+                            print([cam_ind, plate['plate'], time_stamp])
+                            self.class_db.commit(self.sql_table, cam_ind, plate['plate'], time_stamp)
+                            self.buffer_plate_info[cam_ind][i]['processed'] = True
+
+            time.sleep(0.05)
+
     def process_cameras(self):
         saver_list = []
-
+        thread.start_new_thread(self.send_query, ())
         for i in range(len(CAM_INFO)):
             self.frames.append(None)
             self.result_img.append(None)

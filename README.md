@@ -7,6 +7,8 @@
         sudo apt-get install -y python3-pip
         sudo pip3 install opencv-python
         sudo pip3 install fuzzywuzzy
+        sudo pip3 install kivy
+        sudo pip3 install mysql-connector-python
         
 ### Run script
 

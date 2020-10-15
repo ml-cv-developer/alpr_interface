@@ -60,7 +60,8 @@ class PlateDetect:
                           'confidence': results_list[i]['confidence'],
                           'coordinates': coordinate,
                           'candidates': results_list[i]['candidates'],
-                          'time': time.time()}
+                          'time': time.time(),
+                          'processed': False}
 
                 ret_list.append(result)
 
