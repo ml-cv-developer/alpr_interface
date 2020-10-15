@@ -32,8 +32,7 @@ class PlateRecognition:
     def __init__(self, engine='local'):
         if ENABLE_DB:
             self.class_db = ClassMySQL()
-            self.class_db.connect(host='78.188.225.187', database='camera', user='root', password='Aa3846sasa*-')
-            self.sql_table = 'plate'
+            self.class_db.connect(host=DB_HOST, database=DB_DATABASE, user=DB_USER, password=DB_PASSWORD)
             self.query_list = []
 
         if engine == 'service':
@@ -251,7 +250,7 @@ class PlateRecognition:
                         elif cur_time - plate['time'] > 10:
                             dt_object = datetime.fromtimestamp(plate['time'])
                             time_stamp = dt_object.strftime("%Y-%m-%d %H:%M:%S")
-                            self.class_db.commit(self.sql_table, cam_ind, plate['plate'], time_stamp)
+                            self.class_db.commit(DB_TABLE, cam_ind, plate['plate'], time_stamp)
                             self.buffer_plate_info[cam_ind][i]['processed'] = True
 
             time.sleep(0.05)

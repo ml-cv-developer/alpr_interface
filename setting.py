@@ -11,6 +11,13 @@ PANEL_WIDTH = 180
 PANEL_HEIGHT = 80
 PANEL_TEXT_HEIGHT = 35
 
+# SQL DB setting
+DB_HOST = '78.188.225.187'
+DB_DATABASE = 'camera'
+DB_USER = 'root'
+DB_PASSWORD = 'Aa3846sasa*-'
+DB_TABLE = 'plate'
+
 # camera setting
 CAMERA_SOURCE = 'camera_source'
 RESIZE_FACTOR = 'resize_factor'
