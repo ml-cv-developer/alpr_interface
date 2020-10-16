@@ -1,0 +1,142 @@
+Screen:
+    name: 'dlg_menu'
+
+    canvas:
+        Rectangle:
+            pos: 0, 0
+            source: 'logo/img_back.jpg'
+            size: root.width, root.height
+
+    BoxLayout:
+        padding: (50, 50)
+        spacing: 50
+        orientation: 'vertical'
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 20
+
+            Label:
+                text: 'Camera Setting'
+                color: (0.1, 0.1, 0.6, 1.0)
+                font_size: 32
+
+            BoxLayout:
+                Label:
+                    text: 'Camera1'
+                    color: (0.1, 0.1, 0.6, 1.0)
+                    font_size: 22
+                    size_hint_x: 0.15
+
+                TextInput:
+                    text: '../video/2.mp4'
+                    font_size: 20
+
+            BoxLayout:
+                Label:
+                    text: 'Camera2'
+                    color: (0.1, 0.1, 0.6, 1.0)
+                    font_size: 22
+                    size_hint_x: 0.15
+
+                TextInput:
+                    text: '../video/1.mp4'
+                    font_size: 20
+
+
+        BoxLayout:
+            orientation: 'vertical'
+            spacing: 20
+
+            Label:
+                text: 'Database Setting'
+                color: (0.1, 0.1, 0.6, 1.0)
+                font_size: 32
+
+            BoxLayout:
+                spacing: 30
+
+                BoxLayout:
+                    Label:
+                        text: 'Host'
+                        color: (0.1, 0.1, 0.6, 1.0)
+                        font_size: 24
+                        size_hint_x: 0.6
+
+                    TextInput:
+                        text: '78.188.225.187'
+                        font_size: 20
+
+                BoxLayout:
+                    size_hint_x: 0.6
+                    Label:
+                        text: 'Port'
+                        color: (0.1, 0.1, 0.6, 1.0)
+                        font_size: 24
+                        size_hint_x: 0.6
+
+                    TextInput:
+                        text: '1330'
+                        font_size: 20
+
+                BoxLayout:
+                    Label:
+                        text: 'Database'
+                        color: (0.1, 0.1, 0.6, 1.0)
+                        font_size: 24
+
+                    TextInput:
+                        text: 'camera'
+                        font_size: 20
+
+            BoxLayout:
+                spacing: 30
+
+                BoxLayout:
+                    Label:
+                        text: 'Table'
+                        color: (0.1, 0.1, 0.6, 1.0)
+                        font_size: 24
+                        size_hint_x: 0.6
+
+                    TextInput:
+                        text: 'plate'
+                        font_size: 20
+
+                BoxLayout:
+                    size_hint_x: 0.6
+                    Label:
+                        text: 'User'
+                        color: (0.1, 0.1, 0.6, 1.0)
+                        font_size: 24
+                        size_hint_x: 0.6
+
+                    TextInput:
+                        text: 'root'
+                        font_size: 20
+
+                BoxLayout:
+                    Label:
+                        text: 'Password'
+                        color: (0.1, 0.1, 0.6, 1.0)
+                        font_size: 24
+
+                    TextInput:
+                        text: 'Aa3846sasa*-'
+                        password: True
+                        font_size: 20
+
+        BoxLayout:
+            padding: (200, 0)
+            spacing: 200
+            size_hint_y: 0.3
+
+            Button:
+                text: 'Start'
+                font_size: 22
+                on_release: app.on_compare_video(txt_video1.text, txt_key1.text, txt_video2.text, txt_key2.text)
+
+            Button:
+                text: 'Exit'
+                font_size: 22
+                on_release: app.on_exit()
