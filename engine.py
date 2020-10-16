@@ -30,10 +30,8 @@ def register(user_name, plate_name):
 class PlateRecognition:
 
     def __init__(self, engine='local'):
-        if ENABLE_DB:
-            self.class_db = ClassMySQL()
-            self.class_db.connect(host=DB_HOST, database=DB_DATABASE, user=DB_USER, password=DB_PASSWORD)
-            self.query_list = []
+        self.class_db = ClassMySQL()
+        self.query_list = []
 
         if engine == 'service':
             self.class_engine = [GetPlateServer()]
@@ -46,6 +44,7 @@ class PlateRecognition:
         self.buffer_plate_info = []
         self.buffer_plate_img = []
         self.prev_time = 0
+        self.flag_run = False
 
     @staticmethod
     def draw_plate(img, plate_dict, user_name=''):
@@ -145,7 +144,6 @@ class PlateRecognition:
 
             frame = cv2.resize(frame, None, fx=CAM_INFO[0][RESIZE_FACTOR], fy=CAM_INFO[0][RESIZE_FACTOR])
             plate = self.class_engine[0].detect_image(frame.copy(), 0)
-            user_name = self.check_user(plate)
             self.update_plate_buffer(frame.copy(), plate, 0)
             # img_draw = self.draw_plate(frame, plate, user_name)
             img_draw = self.draw_plate_ui(frame.copy(), plate, 0)
@@ -157,12 +155,6 @@ class PlateRecognition:
                     saver = cv2.VideoWriter('result.avi', fourcc, 30, (w, h))
                 else:
                     saver.write(img_draw)
-
-            if plate is not None:
-                if user_name == '':
-                    logging.info("Plate License is {}".format(plate['plate']))
-                else:
-                    logging.info("Plate License is {}, User is {}".format(plate['plate'], user_name))
 
             cv2.imshow('frame', img_draw)
             if cv2.waitKey(10) == ord('q'):
@@ -194,6 +186,9 @@ class PlateRecognition:
                         self.buffer_plate_info[cam_ind].pop(0)
                         self.buffer_plate_img[cam_ind].pop(0)
                     else:
+                        if plate['plate'] != self.buffer_plate_info[cam_ind][0]['plate']:
+                            logging.info("Camera: {}, Plate: {}".format(cam_ind, plate['plate']))
+
                         self.buffer_plate_img[cam_ind][0] = img_plate
                         self.buffer_plate_info[cam_ind][0] = plate
 
@@ -202,6 +197,8 @@ class PlateRecognition:
                 self.buffer_plate_img[cam_ind].insert(0, img_plate)
                 self.buffer_plate_info[cam_ind].insert(0, plate)
                 self.prev_time = plate['time']
+
+                logging.info("Camera: {}, Plate: {}".format(cam_ind, plate['plate']))
 
                 if len(self.buffer_plate_info[cam_ind]) >= 20:
                     self.buffer_plate_img[cam_ind].pop(-1)
@@ -217,6 +214,10 @@ class PlateRecognition:
             self.frames[camera_ind] = cv2.resize(frame, None,
                                                  fx=CAM_INFO[camera_ind][RESIZE_FACTOR],
                                                  fy=CAM_INFO[camera_ind][RESIZE_FACTOR])
+
+            if not self.flag_run:
+                break
+
             time.sleep(0.04)
 
     def _thread_detect_plate(self, camera_ind):
@@ -226,19 +227,15 @@ class PlateRecognition:
             if frame is not None:
                 plate = self.class_engine[camera_ind].detect_image(frame.copy(), camera_ind)
                 self.update_plate_buffer(frame.copy(), plate, camera_ind)
-                user_name = self.check_user(plate)
                 # self.result_img[camera_ind] = self.draw_plate(frame, plate, user_name)
                 self.result_img[camera_ind] = self.draw_plate_ui(frame.copy(), plate, camera_ind)
 
-                if plate is not None:
-                    if user_name == '':
-                        logging.info("Camera: {}, Plate: {}".format(camera_ind, plate['plate']))
-                    else:
-                        logging.info("Camera: {}, Plate: {}, User is {}".format(camera_ind, plate['plate'], user_name))
+            if not self.flag_run:
+                break
 
             time.sleep(0.01)
 
-    def send_query(self):
+    def send_query(self, db_table):
         while True:
             if ENABLE_DB:
                 cur_time = time.time()
@@ -250,14 +247,22 @@ class PlateRecognition:
                         elif cur_time - plate['time'] > 10:
                             dt_object = datetime.fromtimestamp(plate['time'])
                             time_stamp = dt_object.strftime("%Y-%m-%d %H:%M:%S")
-                            self.class_db.commit(DB_TABLE, cam_ind, plate['plate'], time_stamp)
+                            self.class_db.commit(db_table, cam_ind, plate['plate'], time_stamp)
                             self.buffer_plate_info[cam_ind][i]['processed'] = True
+
+            if not self.flag_run:
+                break
 
             time.sleep(0.05)
 
-    def process_cameras(self):
+    def process_cameras(self, host=DB_HOST, database=DB_DATABASE, table=DB_TABLE, user=DB_USER, password=DB_PASSWORD):
         saver_list = []
-        thread.start_new_thread(self.send_query, ())
+        self.flag_run = True
+
+        if ENABLE_DB:
+            self.class_db.connect(host=host, database=database, user=user, password=password)
+            thread.start_new_thread(self.send_query, (table,))
+
         for i in range(len(CAM_INFO)):
             self.frames.append(None)
             self.result_img.append(None)
@@ -287,8 +292,10 @@ class PlateRecognition:
                             saver_list[cam_ind].write(img)
 
             if cv2.waitKey(30) == ord('q'):
+                self.flag_run = False
                 break
 
         for i in range(len(CAM_INFO)):
-            saver_list[i].release()
+            if saver_list[i] is not None:
+                saver_list[i].release()
         cv2.destroyAllWindows()

@@ -29,6 +29,7 @@ Screen:
                     size_hint_x: 0.15
 
                 TextInput:
+                    id: txt_cam1
                     text: '../video/2.mp4'
                     font_size: 20
 
@@ -40,9 +41,9 @@ Screen:
                     size_hint_x: 0.15
 
                 TextInput:
+                    id: txt_cam2
                     text: '../video/1.mp4'
                     font_size: 20
-
 
         BoxLayout:
             orientation: 'vertical'
@@ -64,6 +65,7 @@ Screen:
                         size_hint_x: 0.6
 
                     TextInput:
+                        id: txt_host
                         text: '78.188.225.187'
                         font_size: 20
 
@@ -86,6 +88,7 @@ Screen:
                         font_size: 24
 
                     TextInput:
+                        id: txt_db
                         text: 'camera'
                         font_size: 20
 
@@ -100,6 +103,7 @@ Screen:
                         size_hint_x: 0.6
 
                     TextInput:
+                        id: txt_table
                         text: 'plate'
                         font_size: 20
 
@@ -112,6 +116,7 @@ Screen:
                         size_hint_x: 0.6
 
                     TextInput:
+                        id: txt_user
                         text: 'root'
                         font_size: 20
 
@@ -122,6 +127,7 @@ Screen:
                         font_size: 24
 
                     TextInput:
+                        id: txt_password
                         text: 'Aa3846sasa*-'
                         password: True
                         font_size: 20
@@ -134,7 +140,7 @@ Screen:
             Button:
                 text: 'Start'
                 font_size: 22
-                on_release: app.on_compare_video(txt_video1.text, txt_key1.text, txt_video2.text, txt_key2.text)
+                on_release: app.on_start_capture(txt_cam1.text, txt_cam2.text, txt_host.text, txt_db.text, txt_table.text, txt_user.text, txt_password.text)
 
             Button:
                 text: 'Exit'

@@ -4,6 +4,7 @@ from kivy.lang import Builder
 from kivy.properties import ListProperty, StringProperty
 from kivy.core.window import Window
 from engine import PlateRecognition
+from setting import *
 
 
 class BestApp(App):
@@ -11,17 +12,11 @@ class BestApp(App):
     screen_names = ListProperty([])
     screens = {}  # Dict of all screens
     title = StringProperty()
-    txt_video1_file = StringProperty()
-    txt_video2_file = StringProperty()
-    txt_key1_file = StringProperty()
-    txt_key2_file = StringProperty()
 
     def __init__(self, **kwargs):
         self.class_main = PlateRecognition()
 
         self.title = 'View'
-        self.text_index = 0
-
 
         try:
             Window.size = (960, 540)
@@ -33,30 +28,13 @@ class BestApp(App):
         super(BestApp, self).__init__(**kwargs)
 
     # --------------------------- Main Menu Event -----------------------------
-    def go_file(self, index):
-        self.title = 'Select File'
-        self.text_index = index
-        self.go_screen('dlg_file', 'left')
-
-    def on_file_select(self, state, value):
-        self.title = 'View'
-        self.go_screen('dlg_menu', 'right')
-        if state == 'sel':
-            if self.text_index == 0:
-                self.txt_video1_file = value[0]
-            elif self.text_index == 1:
-                self.txt_key1_file = value[0]
-            elif self.text_index == 2:
-                self.txt_video2_file = value[0]
-            elif self.text_index == 3:
-                self.txt_key2_file = value[0]
+    def on_start_capture(self, cam1, cam2, host, database, table, user, password):
+        CAM_INFO[0][CAMERA_SOURCE] = cam1
+        CAM_INFO[1][CAMERA_SOURCE] = cam2
+        self.class_main.process_cameras(host=host, database=database, table=table, user=user, password=password)
 
     def on_exit(self):
         exit(0)
-
-    # ----------------------- Processing Event ---------------------------
-    def on_compare_video(self, video_name1, keypoint_name1, video_name2, keypoint_name2):
-        pass
 
     def build(self):
         self.load_screen()

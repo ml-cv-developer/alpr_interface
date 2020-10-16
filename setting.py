@@ -3,7 +3,7 @@ REGISTER_FILE = 'register/register.csv'
 LOG_FILE = 'logs/result.log'
 
 # main setting
-DRAW_ROI = True
+DRAW_ROI = False
 DRAW_PLATE = True
 SAVE_VIDEO = True
 ENABLE_DB = True
