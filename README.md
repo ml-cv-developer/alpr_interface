@@ -12,6 +12,15 @@
         sudo pip3 install pygame
         sudo pip3 install mysql-connector-python
         
+        
+In case of Ubuntu18.04, please use this link for openalpr
+
+        https://gist.github.com/braitsch/ee5434f91744026abb6c099f98e67613
+        
+If Kivy isn't installed, please use this link
+
+        https://gist.github.com/rodnaxel/822fae7e8414dcb7616e068a69103060
+        
 ### Run script
 
 - Register License Plate
