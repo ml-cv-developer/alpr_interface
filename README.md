@@ -50,7 +50,6 @@ If Kivy isn't installed, please use this link
         python3 main.py  check  engine_type  camera
         
     engine_type is same as above.
-    And in this case will read `conf/camera_list.txt` for multi camera url.
     
     For example
     
