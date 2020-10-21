@@ -145,7 +145,7 @@ class PlateRecognition:
             frame = cv2.resize(frame, None, fx=CAM_INFO[0][RESIZE_FACTOR], fy=CAM_INFO[0][RESIZE_FACTOR])
             plate = self.class_engine[0].detect_image(frame.copy(), 0)
             self.update_plate_buffer(frame.copy(), plate, 0)
-            # img_draw = self.draw_plate(frame, plate, user_name)
+            # img_draw = self.draw_plate(frame, plate)
             img_draw = self.draw_plate_ui(frame.copy(), plate, 0)
 
             if SAVE_VIDEO:

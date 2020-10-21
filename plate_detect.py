@@ -82,11 +82,14 @@ class PlateDetect:
             ['Z', '2'],
             ['O', '0'],
             ['D', '0'],
-            ['J', '3']
+            ['J', '3'],
+            ['G', '6'],
+            ['B', '8']
         ]
 
         max_confidence = 0
         result = None
+        # result = results[0]
 
         for i in range(len(results)):
             plate = results[i]['plate']

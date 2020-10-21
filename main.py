@@ -7,8 +7,8 @@ import sys
 if __name__ == '__main__':
     # in_args = ['register', 'Filic', 'B58BPS']
     in_args = ['check', 'local', 'camera']
-    # in_args = ['check', 'local', '../video/2.mp4']
-    # in_args = ['check', 'local', '../image/1.png']
+    # in_args = ['check', 'local', '../video/4.avi']
+    # in_args = ['check', 'local', '../image2/14.jpg']
 
     for arg_ind in range(1, len(sys.argv)):
         in_args[arg_ind - 1] = sys.argv[arg_ind]
@@ -37,7 +37,7 @@ if __name__ == '__main__':
             cv2.imshow('ret', img_org)
             cv2.waitKey(0)
 
-        elif label.lower()[-4:] in ['.mp4', '.avi']:
+        elif label.lower()[-4:] in ['.mp4', '.avi', '.asf']:
             class_plate.process_video_file(label)
 
         elif label == 'camera':

@@ -58,3 +58,7 @@ If Kivy isn't installed, please use this link
         
     The detected results will be stored in `logs/result.log`
     
+- Check with UI
+
+        python3 start_ui.py
+    
