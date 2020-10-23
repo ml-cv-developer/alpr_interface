@@ -8,6 +8,7 @@ import numpy as np
 import func
 import logging
 import _thread as thread
+import base64
 import time
 import cv2
 import os
@@ -43,6 +44,7 @@ class PlateRecognition:
         self.result_img = []
         self.buffer_plate_info = []
         self.buffer_plate_img = []
+        self.buffer_full_img = []
         self.prev_time = 0
         self.flag_run = False
 
@@ -134,6 +136,7 @@ class PlateRecognition:
     def process_video_file(self, vid_file):
         self.buffer_plate_info.append([])
         self.buffer_plate_img.append([])
+        self.buffer_full_img.append([])
         cap = cv2.VideoCapture(vid_file)
         saver = None
 
@@ -185,16 +188,19 @@ class PlateRecognition:
                             plate['plate'] == self.buffer_plate_info[cam_ind][1]['plate']:
                         self.buffer_plate_info[cam_ind].pop(0)
                         self.buffer_plate_img[cam_ind].pop(0)
+                        self.buffer_full_img[cam_ind].pop(0)
                     else:
                         if plate['plate'] != self.buffer_plate_info[cam_ind][0]['plate']:
                             logging.info("Camera: {}, Plate: {}".format(cam_ind, plate['plate']))
 
                         self.buffer_plate_img[cam_ind][0] = img_plate
+                        self.buffer_full_img[cam_ind][0] = frame
                         self.buffer_plate_info[cam_ind][0] = plate
 
                     self.prev_time = plate['time']
             else:
                 self.buffer_plate_img[cam_ind].insert(0, img_plate)
+                self.buffer_full_img[cam_ind].insert(0, frame)
                 self.buffer_plate_info[cam_ind].insert(0, plate)
                 self.prev_time = plate['time']
 
@@ -202,6 +208,7 @@ class PlateRecognition:
 
                 if len(self.buffer_plate_info[cam_ind]) >= 20:
                     self.buffer_plate_img[cam_ind].pop(-1)
+                    self.buffer_full_img[cam_ind].pop(-1)
                     self.buffer_plate_info[cam_ind].pop(-1)
 
     def _thread_read_camera(self, camera_ind):
@@ -247,7 +254,15 @@ class PlateRecognition:
                         elif cur_time - plate['time'] > 10:
                             dt_object = datetime.fromtimestamp(plate['time'])
                             time_stamp = dt_object.strftime("%Y-%m-%d %H:%M:%S")
-                            self.class_db.commit(db_table, cam_ind, plate['plate'], time_stamp)
+
+                            # convert plate image to base64
+                            img_plate = self.buffer_full_img[cam_ind][i]
+                            cv2.imwrite('temp_sql.jpg', img_plate)
+                            with open('temp_sql.jpg', 'rb') as image:
+                                image_bin = image.read()
+                                encodestring = base64.b64encode(image_bin)
+
+                            self.class_db.commit(db_table, cam_ind, plate['plate'], time_stamp, encodestring)
                             self.buffer_plate_info[cam_ind][i]['processed'] = True
 
             if not self.flag_run:
@@ -269,6 +284,7 @@ class PlateRecognition:
             saver_list.append(None)
             self.buffer_plate_info.append([])
             self.buffer_plate_img.append([])
+            self.buffer_full_img.append([])
 
             if i > 0:
                 self.class_engine.append(PlateDetect())

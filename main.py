@@ -7,7 +7,7 @@ import sys
 if __name__ == '__main__':
     # in_args = ['register', 'Filic', 'B58BPS']
     in_args = ['check', 'local', 'camera']
-    # in_args = ['check', 'local', '../video/4.avi']
+    # in_args = ['check', 'local', '../video/2.mp4']
     # in_args = ['check', 'local', '../image2/14.jpg']
 
     for arg_ind in range(1, len(sys.argv)):

@@ -16,13 +16,13 @@ class ClassMySQL:
         except mysql.connector.Error as error:
             print("Failed to connect database! {}".format(error))
 
-    def commit(self, table, cam_ind, plate, timestamp):
+    def commit(self, table, cam_ind, plate, timestamp, img):
         if self.connection is None:
             return
 
         try:
-            query = "INSERT INTO {} (camera_id, plate_number, timestamp) VALUES ({}, '{}', '{}')".\
-                format(table, cam_ind, plate, timestamp)
+            query = """INSERT INTO {} (camera_id, plate_number, timestamp, img) VALUES ({}, '{}', '{}', "{}")""".\
+                format(table, cam_ind, plate, timestamp, img)
             print(query)
             self.cursor.execute(query)
             self.connection.commit()
